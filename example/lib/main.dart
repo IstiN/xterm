@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:example/src/platform_menu.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_pty/flutter_pty.dart';
 import 'package:xterm/xterm.dart';
 
 void main() {
@@ -41,20 +43,50 @@ class _HomeState extends State<Home> {
   final terminal = Terminal(maxLines: 10000);
   final terminalController = TerminalController();
 
+  late final Pty pty;
+
   @override
   void initState() {
     super.initState();
-    _drawBox();
+
+    WidgetsBinding.instance.endOfFrame.then(
+      (_) {
+        if (mounted) _startPty();
+      },
+    );
   }
 
-  void _drawBox() {
-    // Draw a rounded-corner box to verify box-drawing alignment.
-    final buffer = StringBuffer()
-      ..write('\u256D\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256E\r\n')
-      ..write('\u2502  hello  \u2502\r\n')
-      ..write('\u2502  world  \u2502\r\n')
-      ..write('\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F\r\n');
-    terminal.write(buffer.toString());
+  void _startPty() {
+    // Print a box-drawing demo before the shell starts.
+    terminal.write(
+      '\u256D\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256E\r\n'
+      '\u2502  hello  \u2502\r\n'
+      '\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F\r\n'
+      '\r\n',
+    );
+
+    pty = Pty.start(
+      shell,
+      columns: terminal.viewWidth,
+      rows: terminal.viewHeight,
+    );
+
+    pty.output
+        .cast<List<int>>()
+        .transform(Utf8Decoder())
+        .listen(terminal.write);
+
+    pty.exitCode.then((code) {
+      terminal.write('the process exited with exit code $code');
+    });
+
+    terminal.onOutput = (data) {
+      pty.write(const Utf8Encoder().convert(data));
+    };
+
+    terminal.onResize = (w, h, pw, ph) {
+      pty.resize(h, w);
+    };
   }
 
   @override
@@ -85,4 +117,16 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+}
+
+String get shell {
+  if (Platform.isMacOS || Platform.isLinux) {
+    return Platform.environment['SHELL'] ?? 'bash';
+  }
+
+  if (Platform.isWindows) {
+    return 'cmd.exe';
+  }
+
+  return 'sh';
 }
