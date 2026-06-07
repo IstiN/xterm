@@ -238,9 +238,9 @@ class TerminalPainter {
       // workaround the regular space CodePoint 0x20 is replaced with
       // the CodePoint 0xA0. This is a non breaking space and a underline can be
       // drawn below it.
-      var char = String.fromCharCode(charCode);
+      var char = _charFromCodePoint(charCode);
       if (cellFlags & CellFlags.underline != 0 && charCode == 0x20) {
-        char = String.fromCharCode(0xA0);
+        char = _charFromCodePoint(0xA0);
       }
 
       paragraph = _paragraphCache.performAndCacheLayout(
@@ -252,6 +252,17 @@ class TerminalPainter {
     }
 
     canvas.drawParagraph(paragraph, _snapOffset(offset));
+  }
+
+  /// Converts a Unicode code point to a Dart string, handling surrogate pairs
+  /// for code points above U+FFFF (e.g. emoji).
+  static String _charFromCodePoint(int codePoint) {
+    if (codePoint <= 0xFFFF) return String.fromCharCode(codePoint);
+    codePoint -= 0x10000;
+    return String.fromCharCodes([
+      0xD800 + (codePoint >> 10),
+      0xDC00 + (codePoint & 0x3FF),
+    ]);
   }
 
   /// Draws a Unicode box-drawing character (U+2500–U+257F) using Canvas lines.
