@@ -257,6 +257,14 @@ class TerminalPainter {
   /// Converts a Unicode code point to a Dart string, handling surrogate pairs
   /// for code points above U+FFFF (e.g. emoji).
   static String _charFromCodePoint(int codePoint) {
+    // Surrogate code points (0xD800–0xDFFF) and values above U+10FFFF are
+    // invalid in Unicode. Return the replacement character to avoid crashes.
+    if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
+      return String.fromCharCode(0xFFFD);
+    }
+    if (codePoint > 0x10FFFF) {
+      return String.fromCharCode(0xFFFD);
+    }
     if (codePoint <= 0xFFFF) return String.fromCharCode(codePoint);
     codePoint -= 0x10000;
     return String.fromCharCodes([
