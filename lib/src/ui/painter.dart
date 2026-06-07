@@ -260,7 +260,7 @@ class TerminalPainter {
     final paint = Paint()
       ..color = color
       ..isAntiAlias = false;
-    final y1 = _snap(offset.dy + _cellSize.height);
+    final y1 = offset.dy + _cellSize.height;
     canvas.drawRect(Rect.fromLTRB(offset.dx, offset.dy, rightEdge, y1), paint);
   }
 
