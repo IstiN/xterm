@@ -185,13 +185,13 @@ class TerminalPainter {
   @pragma('vm:prefer-inline')
   void paintCell(Canvas canvas, Offset offset, CellData cellData, double rightEdge) {
     paintCellBackground(canvas, offset, cellData, rightEdge);
-    paintCellForeground(canvas, offset, cellData);
+    paintCellForeground(canvas, offset, cellData, rightEdge);
   }
 
   /// Paints the character in the cell represented by [cellData] to [canvas] at
   /// [offset].
   @pragma('vm:prefer-inline')
-  void paintCellForeground(Canvas canvas, Offset offset, CellData cellData) {
+  void paintCellForeground(Canvas canvas, Offset offset, CellData cellData, double rightEdge) {
     final charCode = cellData.content & CellContent.codepointMask;
     if (charCode == 0) return;
 
@@ -205,17 +205,25 @@ class TerminalPainter {
       color = color.withOpacity(0.5);
     }
 
+    // Use the actual snapped cell width so lines exactly meet edges.
+    final actualWidth = rightEdge - offset.dx;
+    final actualHeight = _cellSize.height;
+
     // Box-drawing characters (U+2500–U+257F) are drawn manually with Canvas
     // primitives to guarantee perfect alignment between adjacent cells,
     // regardless of font metrics.
     if (charCode >= 0x2500 && charCode <= 0x257F) {
+      print('[xterm:box] code=0x${charCode.toRadixString(16)} '
+          'char=${String.fromCharCode(charCode)} '
+          'offset=(${offset.dx.toStringAsFixed(2)},${offset.dy.toStringAsFixed(2)}) '
+          'actualW=${actualWidth.toStringAsFixed(2)} nominalW=${_cellSize.width.toStringAsFixed(2)}');
       if (_drawBoxDrawingChar(
         canvas,
         offset,
         charCode,
         color,
-        _cellSize.width,
-        _cellSize.height,
+        actualWidth,
+        actualHeight,
         bold: cellFlags & CellFlags.bold != 0,
       )) {
         return;
