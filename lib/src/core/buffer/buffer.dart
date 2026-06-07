@@ -98,14 +98,19 @@ class Buffer {
   /// See also: [Terminal.write]
   void write(String text) {
     final units = text.codeUnits;
-    if (units.length == text.length) {
-      for (var i = 0; i < units.length; i++) {
-        writeChar(units[i]);
+    for (var i = 0; i < units.length; i++) {
+      final unit = units[i];
+      // Combine UTF-16 surrogate pairs into a single Unicode code point.
+      if (unit >= 0xD800 && unit <= 0xDBFF && i + 1 < units.length) {
+        final low = units[i + 1];
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          final codePoint = 0x10000 + ((unit & 0x3FF) << 10) + (low & 0x3FF);
+          writeChar(codePoint);
+          i++;
+          continue;
+        }
       }
-      return;
-    }
-    for (var char in text.runes) {
-      writeChar(char);
+      writeChar(unit);
     }
   }
 

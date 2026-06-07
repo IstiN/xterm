@@ -14,12 +14,33 @@ class ByteConsumer {
   void add(String data) {
     if (data.isEmpty) return;
     final units = data.codeUnits;
-    if (units.length == data.length) {
+    var hasSurrogate = false;
+    for (var i = 0; i < units.length; i++) {
+      final unit = units[i];
+      if (unit >= 0xD800 && unit <= 0xDFFF) {
+        hasSurrogate = true;
+        break;
+      }
+    }
+    if (!hasSurrogate) {
       _queue.addLast(units);
       _length += units.length;
       return;
     }
-    final runes = data.runes.toList(growable: false);
+    // Combine UTF-16 surrogate pairs into single Unicode code points.
+    final runes = <int>[];
+    for (var i = 0; i < units.length; i++) {
+      final unit = units[i];
+      if (unit >= 0xD800 && unit <= 0xDBFF && i + 1 < units.length) {
+        final low = units[i + 1];
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          runes.add(0x10000 + ((unit & 0x3FF) << 10) + (low & 0x3FF));
+          i++;
+          continue;
+        }
+      }
+      runes.add(unit);
+    }
     _queue.addLast(runes);
     _length += runes.length;
   }
