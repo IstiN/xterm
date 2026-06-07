@@ -53,6 +53,7 @@ class RenderTerminal extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
         );
 
   bool _layoutPending = false;
+  bool _dirty = false;
 
   /// Pending size when a resize is debounced (alt-buffer or large scrollback).
   Timer? _altResizeDebounce;
@@ -186,8 +187,9 @@ class RenderTerminal extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
   }
 
   void _onTerminalChange() {
+    _dirty = true;
     _scheduleLayout();
-    markNeedsPaint();
+    // markNeedsPaint is implied by markNeedsLayout; avoid double scheduling.
     _notifyEditableRect();
   }
 
@@ -459,7 +461,11 @@ class RenderTerminal extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
   @override
   void paint(PaintingContext context, Offset offset) {
     _paint(context, offset);
-    context.setWillChangeHint();
+    // Only hint will-change if the terminal has pending updates.
+    if (_dirty) {
+      _dirty = false;
+      context.setWillChangeHint();
+    }
   }
 
   void _paint(PaintingContext context, Offset offset) {

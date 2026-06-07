@@ -13,13 +13,25 @@ class TerminalPainter {
     required TextScaler textScaler,
   })  : _textStyle = textStyle,
         _theme = theme,
-        _textScaler = textScaler;
+        _textScaler = textScaler {
+    _updateDpr();
+  }
+
+  /// Reusable CellData to avoid allocation per line during paint.
+  final _reusableCellData = CellData.empty();
 
   /// A lookup table from terminal colors to Flutter colors.
   late var _colorPalette = PaletteBuilder(_theme).build();
 
   /// Size of each character in the terminal.
   late var _cellSize = _measureCharSize();
+
+  /// Cached device pixel ratio to avoid PlatformDispatcher lookup per cell.
+  double _dpr = 1.0;
+
+  void _updateDpr() {
+    _dpr = PlatformDispatcher.instance.implicitView?.devicePixelRatio ?? 1.0;
+  }
 
   /// The cached for cells in the terminal. Should be cleared when the same
   /// cell no longer produces the same visual output. For example, when
@@ -149,7 +161,7 @@ class TerminalPainter {
     Offset offset,
     BufferLine line,
   ) {
-    final cellData = CellData.empty();
+    final cellData = _reusableCellData;
     final cellWidth = _cellSize.width;
     final lineOffset = _snapOffset(offset);
 
@@ -253,10 +265,8 @@ class TerminalPainter {
   }
 
   double _snap(double value) {
-    final dpr =
-        PlatformDispatcher.instance.implicitView?.devicePixelRatio ?? 1.0;
-    if (dpr <= 0) return value;
-    return (value * dpr).roundToDouble() / dpr;
+    if (_dpr <= 0) return value;
+    return (value * _dpr).roundToDouble() / _dpr;
   }
 
   Offset _snapOffset(Offset offset) =>

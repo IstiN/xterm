@@ -97,6 +97,13 @@ class Buffer {
   ///
   /// See also: [Terminal.write]
   void write(String text) {
+    final units = text.codeUnits;
+    if (units.length == text.length) {
+      for (var i = 0; i < units.length; i++) {
+        writeChar(units[i]);
+      }
+      return;
+    }
     for (var char in text.runes) {
       writeChar(char);
     }
@@ -109,7 +116,7 @@ class Buffer {
   void writeChar(int codePoint) {
     codePoint = charset.translate(codePoint);
 
-    final cellWidth = unicodeV11.wcwidth(codePoint);
+    final cellWidth = codePoint < 128 ? 1 : unicodeV11.wcwidth(codePoint);
     if (_cursorX >= terminal.viewWidth) {
       index();
       setCursorX(0);

@@ -26,7 +26,11 @@ class CellData {
   int content;
 
   int getHash() {
-    return hashValues(foreground, background, flags, content);
+    // Inline bitwise hash — avoids hashValues() List allocation.
+    return foreground ^
+        (background * 31) ^
+        (flags * 0x9e3779b9) ^
+        (content * 0x85ebca6b);
   }
 
   @override

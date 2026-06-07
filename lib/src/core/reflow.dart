@@ -124,7 +124,7 @@ class _LineReflow {
         cellsToCopy--;
       }
 
-      for (var anchor in line.anchors.toList()) {
+      for (var anchor in line.anchors) {
         if (anchor.x >= from && anchor.x <= from + cellsToCopy) {
           _builder.addAnchor(anchor, anchor.x - from);
         }
@@ -142,7 +142,7 @@ class _LineReflow {
     }
 
     if (line.anchors.isNotEmpty) {
-      for (var anchor in line.anchors.toList()) {
+      for (var anchor in line.anchors) {
         if (anchor.x >= to) {
           _builder.addAnchor(anchor, anchor.x - to);
         }

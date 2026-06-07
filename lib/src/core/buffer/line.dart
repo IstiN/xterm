@@ -163,9 +163,7 @@ class BufferLine with IndexedItem {
       final moveStart = start * _cellSize;
       final moveEnd = (_length - count) * _cellSize;
       final moveOffset = count * _cellSize;
-      for (var i = moveStart; i < moveEnd; i++) {
-        _data[i] = _data[i + moveOffset];
-      }
+      _data.setRange(moveStart, moveEnd, _data, moveStart + moveOffset);
     }
 
     for (var i = _length - count; i < _length; i++) {
@@ -201,9 +199,7 @@ class BufferLine with IndexedItem {
       final moveStart = start * _cellSize;
       final moveEnd = (_length - count) * _cellSize;
       final moveOffset = count * _cellSize;
-      for (var i = moveEnd - 1; i >= moveStart; i--) {
-        _data[i + moveOffset] = _data[i];
-      }
+      _data.setRange(moveStart + moveOffset, moveEnd + moveOffset, _data, moveStart);
     }
 
     final end = min(start + count, _length);
@@ -289,18 +285,12 @@ class BufferLine with IndexedItem {
   void copyFrom(BufferLine src, int srcCol, int dstCol, int len) {
     resize(dstCol + len);
 
-    // data.setRange(
-    //   dstCol * _cellSize,
-    //   (dstCol + len) * _cellSize,
-    //   Uint32List.sublistView(src.data, srcCol * _cellSize, len * _cellSize),
-    // );
-
-    var srcOffset = srcCol * _cellSize;
-    var dstOffset = dstCol * _cellSize;
-
-    for (var i = 0; i < len * _cellSize; i++) {
-      _data[dstOffset++] = src._data[srcOffset++];
-    }
+    _data.setRange(
+      dstCol * _cellSize,
+      (dstCol + len) * _cellSize,
+      src.data,
+      srcCol * _cellSize,
+    );
   }
 
   static int _calcCapacity(int length) {
