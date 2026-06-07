@@ -275,8 +275,9 @@ class TerminalPainter {
     final right = offset.dx + width;
     final top = offset.dy;
     final bottom = offset.dy + height;
-    final midX = offset.dx + width / 2;
-    final midY = offset.dy + height / 2;
+    // Round to nearest pixel so anti-aliased 1px strokes are sharp.
+    final midX = (offset.dx + width / 2).roundToDouble();
+    final midY = (offset.dy + height / 2).roundToDouble();
 
     // Helper closures for common strokes.
     void hLine(double y, double x1, double x2) {
