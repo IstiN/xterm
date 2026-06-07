@@ -267,202 +267,201 @@ class TerminalPainter {
   }) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = bold ? 2.0 : 1.0
-      ..strokeCap = StrokeCap.butt
-      ..isAntiAlias = true;
+      ..isAntiAlias = false;
 
     final left = offset.dx;
     final right = offset.dx + width;
     final top = offset.dy;
     final bottom = offset.dy + height;
-    // Round to nearest pixel so anti-aliased 1px strokes are sharp.
     final midX = (offset.dx + width / 2).roundToDouble();
     final midY = (offset.dy + height / 2).roundToDouble();
 
-    // Helper closures for common strokes.
-    void hLine(double y, double x1, double x2) {
-      canvas.drawLine(Offset(x1, y), Offset(x2, y), paint);
+    // Helper closures using drawRect for pixel-perfect 1px strokes.
+    void hRect(double y, double x1, double x2) {
+      final yr = y.roundToDouble();
+      canvas.drawRect(Rect.fromLTRB(x1, yr, x2, yr + 1.0), paint);
     }
 
-    void vLine(double x, double y1, double y2) {
-      canvas.drawLine(Offset(x, y1), Offset(x, y2), paint);
+    void vRect(double x, double y1, double y2) {
+      final xr = x.roundToDouble();
+      canvas.drawRect(Rect.fromLTRB(xr, y1, xr + 1.0, y2), paint);
     }
 
     switch (codePoint) {
       // ─━┄┅┈┉╌╍
       case 0x2500: // ─ light horizontal
-        hLine(midY, left, right);
+        hRect(midY, left, right);
         return true;
       case 0x2501: // ━ heavy horizontal
-        hLine(midY, left, right);
+        hRect(midY, left, right);
         return true;
       case 0x2502: // │ light vertical
-        vLine(midX, top, bottom);
+        vRect(midX, top, bottom);
         return true;
       case 0x2503: // ┃ heavy vertical
-        vLine(midX, top, bottom);
+        vRect(midX, top, bottom);
         return true;
 
       // corners light
       case 0x250C: // ┌ down and right
-        hLine(midY, midX, right);
-        vLine(midX, midY, bottom);
+        hRect(midY, midX, right);
+        vRect(midX, midY, bottom);
         return true;
       case 0x2510: // ┐ down and left
-        hLine(midY, left, midX);
-        vLine(midX, midY, bottom);
+        hRect(midY, left, midX);
+        vRect(midX, midY, bottom);
         return true;
       case 0x2514: // └ up and right
-        hLine(midY, midX, right);
-        vLine(midX, top, midY);
+        hRect(midY, midX, right);
+        vRect(midX, top, midY);
         return true;
       case 0x2518: // ┘ up and left
-        hLine(midY, left, midX);
-        vLine(midX, top, midY);
+        hRect(midY, left, midX);
+        vRect(midX, top, midY);
         return true;
 
       // corners heavy
       case 0x250F: // ┏ heavy down and right
-        hLine(midY, midX, right);
-        vLine(midX, midY, bottom);
+        hRect(midY, midX, right);
+        vRect(midX, midY, bottom);
         return true;
       case 0x2513: // ┓ heavy down and left
-        hLine(midY, left, midX);
-        vLine(midX, midY, bottom);
+        hRect(midY, left, midX);
+        vRect(midX, midY, bottom);
         return true;
       case 0x2517: // ┗ heavy up and right
-        hLine(midY, midX, right);
-        vLine(midX, top, midY);
+        hRect(midY, midX, right);
+        vRect(midX, top, midY);
         return true;
       case 0x251B: // ┛ heavy up and left
-        hLine(midY, left, midX);
-        vLine(midX, top, midY);
+        hRect(midY, left, midX);
+        vRect(midX, top, midY);
         return true;
 
       // T-junctions light
       case 0x251C: // ├ vertical and right
-        vLine(midX, top, bottom);
-        hLine(midY, midX, right);
+        vRect(midX, top, bottom);
+        hRect(midY, midX, right);
         return true;
       case 0x2524: // ┤ vertical and left
-        vLine(midX, top, bottom);
-        hLine(midY, left, midX);
+        vRect(midX, top, bottom);
+        hRect(midY, left, midX);
         return true;
       case 0x252C: // ┬ down and horizontal
-        hLine(midY, left, right);
-        vLine(midX, midY, bottom);
+        hRect(midY, left, right);
+        vRect(midX, midY, bottom);
         return true;
       case 0x2534: // ┴ up and horizontal
-        hLine(midY, left, right);
-        vLine(midX, top, midY);
+        hRect(midY, left, right);
+        vRect(midX, top, midY);
         return true;
       case 0x253C: // ┼ vertical and horizontal
-        hLine(midY, left, right);
-        vLine(midX, top, bottom);
+        hRect(midY, left, right);
+        vRect(midX, top, bottom);
         return true;
 
       // T-junctions heavy
       case 0x2523: // ┣ heavy vertical and right
-        vLine(midX, top, bottom);
-        hLine(midY, midX, right);
+        vRect(midX, top, bottom);
+        hRect(midY, midX, right);
         return true;
       case 0x252B: // ┫ heavy vertical and left
-        vLine(midX, top, bottom);
-        hLine(midY, left, midX);
+        vRect(midX, top, bottom);
+        hRect(midY, left, midX);
         return true;
       case 0x2533: // ┳ heavy down and horizontal
-        hLine(midY, left, right);
-        vLine(midX, midY, bottom);
+        hRect(midY, left, right);
+        vRect(midX, midY, bottom);
         return true;
       case 0x253B: // ┻ heavy up and horizontal
-        hLine(midY, left, right);
-        vLine(midX, top, midY);
+        hRect(midY, left, right);
+        vRect(midX, top, midY);
         return true;
       case 0x254B: // ╋ heavy vertical and horizontal
-        hLine(midY, left, right);
-        vLine(midX, top, bottom);
+        hRect(midY, left, right);
+        vRect(midX, top, bottom);
         return true;
 
       // double
       case 0x2550: // ═ double horizontal
-        hLine(midY - 0.5, left, right);
-        hLine(midY + 0.5, left, right);
+        hRect(midY - 0.5, left, right);
+        hRect(midY + 0.5, left, right);
         return true;
       case 0x2551: // ║ double vertical
-        vLine(midX - 0.5, top, bottom);
-        vLine(midX + 0.5, top, bottom);
+        vRect(midX - 0.5, top, bottom);
+        vRect(midX + 0.5, top, bottom);
         return true;
       case 0x2554: // ╔ double down and right
-        hLine(midY - 0.5, midX, right);
-        hLine(midY + 0.5, midX, right);
-        vLine(midX - 0.5, midY, bottom);
-        vLine(midX + 0.5, midY - 0.5, bottom);
+        hRect(midY - 0.5, midX, right);
+        hRect(midY + 0.5, midX, right);
+        vRect(midX - 0.5, midY, bottom);
+        vRect(midX + 0.5, midY - 0.5, bottom);
         return true;
       case 0x2557: // ╗ double down and left
-        hLine(midY - 0.5, left, midX);
-        hLine(midY + 0.5, left, midX);
-        vLine(midX - 0.5, midY - 0.5, bottom);
-        vLine(midX + 0.5, midY, bottom);
+        hRect(midY - 0.5, left, midX);
+        hRect(midY + 0.5, left, midX);
+        vRect(midX - 0.5, midY - 0.5, bottom);
+        vRect(midX + 0.5, midY, bottom);
         return true;
       case 0x255A: // ╚ double up and right
-        hLine(midY - 0.5, midX, right);
-        hLine(midY + 0.5, midX, right);
-        vLine(midX - 0.5, top, midY + 0.5);
-        vLine(midX + 0.5, top, midY);
+        hRect(midY - 0.5, midX, right);
+        hRect(midY + 0.5, midX, right);
+        vRect(midX - 0.5, top, midY + 0.5);
+        vRect(midX + 0.5, top, midY);
         return true;
       case 0x255D: // ╝ double up and left
-        hLine(midY - 0.5, left, midX);
-        hLine(midY + 0.5, left, midX);
-        vLine(midX - 0.5, top, midY);
-        vLine(midX + 0.5, top, midY + 0.5);
+        hRect(midY - 0.5, left, midX);
+        hRect(midY + 0.5, left, midX);
+        vRect(midX - 0.5, top, midY);
+        vRect(midX + 0.5, top, midY + 0.5);
         return true;
       case 0x2560: // ╠ double vertical and right
-        vLine(midX - 0.5, top, bottom);
-        vLine(midX + 0.5, top, bottom);
-        hLine(midY - 0.5, midX + 0.5, right);
-        hLine(midY + 0.5, midX + 0.5, right);
+        vRect(midX - 0.5, top, bottom);
+        vRect(midX + 0.5, top, bottom);
+        hRect(midY - 0.5, midX + 0.5, right);
+        hRect(midY + 0.5, midX + 0.5, right);
         return true;
       case 0x2563: // ╣ double vertical and left
-        vLine(midX - 0.5, top, bottom);
-        vLine(midX + 0.5, top, bottom);
-        hLine(midY - 0.5, left, midX - 0.5);
-        hLine(midY + 0.5, left, midX - 0.5);
+        vRect(midX - 0.5, top, bottom);
+        vRect(midX + 0.5, top, bottom);
+        hRect(midY - 0.5, left, midX - 0.5);
+        hRect(midY + 0.5, left, midX - 0.5);
         return true;
       case 0x2566: // ╦ double down and horizontal
-        hLine(midY - 0.5, left, right);
-        hLine(midY + 0.5, left, right);
-        vLine(midX - 0.5, midY + 0.5, bottom);
-        vLine(midX + 0.5, midY + 0.5, bottom);
+        hRect(midY - 0.5, left, right);
+        hRect(midY + 0.5, left, right);
+        vRect(midX - 0.5, midY + 0.5, bottom);
+        vRect(midX + 0.5, midY + 0.5, bottom);
         return true;
       case 0x2569: // ╩ double up and horizontal
-        hLine(midY - 0.5, left, right);
-        hLine(midY + 0.5, left, right);
-        vLine(midX - 0.5, top, midY - 0.5);
-        vLine(midX + 0.5, top, midY - 0.5);
+        hRect(midY - 0.5, left, right);
+        hRect(midY + 0.5, left, right);
+        vRect(midX - 0.5, top, midY - 0.5);
+        vRect(midX + 0.5, top, midY - 0.5);
         return true;
       case 0x256C: // ╬ double cross
-        hLine(midY - 0.5, left, right);
-        hLine(midY + 0.5, left, right);
-        vLine(midX - 0.5, top, bottom);
-        vLine(midX + 0.5, top, bottom);
+        hRect(midY - 0.5, left, right);
+        hRect(midY + 0.5, left, right);
+        vRect(midX - 0.5, top, bottom);
+        vRect(midX + 0.5, top, bottom);
         return true;
 
       // rounded corners (drawn as straight lines for perfect alignment)
       case 0x256D: // ╭ light arc down and right
-        hLine(midY, midX, right);
-        vLine(midX, midY, bottom);
+        hRect(midY, midX, right);
+        vRect(midX, midY, bottom);
         return true;
       case 0x256E: // ╮ light arc down and left
-        hLine(midY, left, midX);
-        vLine(midX, midY, bottom);
+        hRect(midY, left, midX);
+        vRect(midX, midY, bottom);
         return true;
       case 0x256F: // ╯ light arc up and left
-        hLine(midY, left, midX);
-        vLine(midX, top, midY);
+        hRect(midY, left, midX);
+        vRect(midX, top, midY);
         return true;
       case 0x2570: // ╰ light arc up and right
-        hLine(midY, midX, right);
-        vLine(midX, top, midY);
+        hRect(midY, midX, right);
+        vRect(midX, top, midY);
         return true;
 
       default:
