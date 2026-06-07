@@ -13,9 +13,7 @@ class TerminalPainter {
     required TextScaler textScaler,
   })  : _textStyle = textStyle,
         _theme = theme,
-        _textScaler = textScaler {
-    _updateDpr();
-  }
+        _textScaler = textScaler;
 
   /// Reusable CellData to avoid allocation per line during paint.
   final _reusableCellData = CellData.empty();
@@ -197,20 +195,37 @@ class TerminalPainter {
     final charCode = cellData.content & CellContent.codepointMask;
     if (charCode == 0) return;
 
+    final cellFlags = cellData.flags;
+
+    var color = cellFlags & CellFlags.inverse == 0
+        ? resolveForegroundColor(cellData.foreground)
+        : resolveBackgroundColor(cellData.background);
+
+    if (cellData.flags & CellFlags.faint != 0) {
+      color = color.withOpacity(0.5);
+    }
+
+    // Box-drawing characters (U+2500–U+257F) are drawn manually with Canvas
+    // primitives to guarantee perfect alignment between adjacent cells,
+    // regardless of font metrics.
+    if (charCode >= 0x2500 && charCode <= 0x257F) {
+      if (_drawBoxDrawingChar(
+        canvas,
+        offset,
+        charCode,
+        color,
+        _cellSize.width,
+        _cellSize.height,
+        bold: cellFlags & CellFlags.bold != 0,
+      )) {
+        return;
+      }
+    }
+
     final cacheKey = cellData.getHash() ^ _textScaler.hashCode;
     var paragraph = _paragraphCache.getLayoutFromCache(cacheKey);
 
     if (paragraph == null) {
-      final cellFlags = cellData.flags;
-
-      var color = cellFlags & CellFlags.inverse == 0
-          ? resolveForegroundColor(cellData.foreground)
-          : resolveBackgroundColor(cellData.background);
-
-      if (cellData.flags & CellFlags.faint != 0) {
-        color = color.withOpacity(0.5);
-      }
-
       final style = _textStyle.toTextStyle(
         color: color,
         bold: cellFlags & CellFlags.bold != 0,
@@ -238,6 +253,203 @@ class TerminalPainter {
     }
 
     canvas.drawParagraph(paragraph, _snapOffset(offset));
+  }
+
+  /// Draws a Unicode box-drawing character (U+2500–U+257F) using Canvas lines.
+  /// Returns `true` if the character was handled.
+  bool _drawBoxDrawingChar(
+    Canvas canvas,
+    Offset offset,
+    int codePoint,
+    Color color,
+    double width,
+    double height, {
+    required bool bold,
+  }) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = bold ? 2.0 : 1.0
+      ..strokeCap = StrokeCap.butt
+      ..isAntiAlias = false;
+
+    final left = offset.dx;
+    final right = offset.dx + width;
+    final top = offset.dy;
+    final bottom = offset.dy + height;
+    final midX = offset.dx + width / 2;
+    final midY = offset.dy + height / 2;
+
+    // Helper closures for common strokes.
+    void hLine(double y, double x1, double x2) {
+      canvas.drawLine(Offset(x1, y), Offset(x2, y), paint);
+    }
+
+    void vLine(double x, double y1, double y2) {
+      canvas.drawLine(Offset(x, y1), Offset(x, y2), paint);
+    }
+
+    switch (codePoint) {
+      // ─━┄┅┈┉╌╍
+      case 0x2500: // ─ light horizontal
+        hLine(midY, left, right);
+        return true;
+      case 0x2501: // ━ heavy horizontal
+        hLine(midY, left, right);
+        return true;
+      case 0x2502: // │ light vertical
+        vLine(midX, top, bottom);
+        return true;
+      case 0x2503: // ┃ heavy vertical
+        vLine(midX, top, bottom);
+        return true;
+
+      // corners light
+      case 0x250C: // ┌ down and right
+        hLine(midY, midX, right);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x2510: // ┐ down and left
+        hLine(midY, left, midX);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x2514: // └ up and right
+        hLine(midY, midX, right);
+        vLine(midX, top, midY);
+        return true;
+      case 0x2518: // ┘ up and left
+        hLine(midY, left, midX);
+        vLine(midX, top, midY);
+        return true;
+
+      // corners heavy
+      case 0x250F: // ┏ heavy down and right
+        hLine(midY, midX, right);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x2513: // ┓ heavy down and left
+        hLine(midY, left, midX);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x2517: // ┗ heavy up and right
+        hLine(midY, midX, right);
+        vLine(midX, top, midY);
+        return true;
+      case 0x251B: // ┛ heavy up and left
+        hLine(midY, left, midX);
+        vLine(midX, top, midY);
+        return true;
+
+      // T-junctions light
+      case 0x251C: // ├ vertical and right
+        vLine(midX, top, bottom);
+        hLine(midY, midX, right);
+        return true;
+      case 0x2524: // ┤ vertical and left
+        vLine(midX, top, bottom);
+        hLine(midY, left, midX);
+        return true;
+      case 0x252C: // ┬ down and horizontal
+        hLine(midY, left, right);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x2534: // ┴ up and horizontal
+        hLine(midY, left, right);
+        vLine(midX, top, midY);
+        return true;
+      case 0x253C: // ┼ vertical and horizontal
+        hLine(midY, left, right);
+        vLine(midX, top, bottom);
+        return true;
+
+      // T-junctions heavy
+      case 0x2523: // ┣ heavy vertical and right
+        vLine(midX, top, bottom);
+        hLine(midY, midX, right);
+        return true;
+      case 0x252B: // ┫ heavy vertical and left
+        vLine(midX, top, bottom);
+        hLine(midY, left, midX);
+        return true;
+      case 0x2533: // ┳ heavy down and horizontal
+        hLine(midY, left, right);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x253B: // ┻ heavy up and horizontal
+        hLine(midY, left, right);
+        vLine(midX, top, midY);
+        return true;
+      case 0x254B: // ╋ heavy vertical and horizontal
+        hLine(midY, left, right);
+        vLine(midX, top, bottom);
+        return true;
+
+      // double
+      case 0x2550: // ═ double horizontal
+        hLine(midY - 0.5, left, right);
+        hLine(midY + 0.5, left, right);
+        return true;
+      case 0x2551: // ║ double vertical
+        vLine(midX - 0.5, top, bottom);
+        vLine(midX + 0.5, top, bottom);
+        return true;
+      case 0x2554: // ╔ double down and right
+        hLine(midY - 0.5, midX, right);
+        hLine(midY + 0.5, midX, right);
+        vLine(midX - 0.5, midY, bottom);
+        vLine(midX + 0.5, midY - 0.5, bottom);
+        return true;
+      case 0x2557: // ╗ double down and left
+        hLine(midY - 0.5, left, midX);
+        hLine(midY + 0.5, left, midX);
+        vLine(midX - 0.5, midY - 0.5, bottom);
+        vLine(midX + 0.5, midY, bottom);
+        return true;
+      case 0x255A: // ╚ double up and right
+        hLine(midY - 0.5, midX, right);
+        hLine(midY + 0.5, midX, right);
+        vLine(midX - 0.5, top, midY + 0.5);
+        vLine(midX + 0.5, top, midY);
+        return true;
+      case 0x255D: // ╝ double up and left
+        hLine(midY - 0.5, left, midX);
+        hLine(midY + 0.5, left, midX);
+        vLine(midX - 0.5, top, midY);
+        vLine(midX + 0.5, top, midY + 0.5);
+        return true;
+      case 0x2560: // ╠ double vertical and right
+        vLine(midX - 0.5, top, bottom);
+        vLine(midX + 0.5, top, bottom);
+        hLine(midY - 0.5, midX + 0.5, right);
+        hLine(midY + 0.5, midX + 0.5, right);
+        return true;
+      case 0x2563: // ╣ double vertical and left
+        vLine(midX - 0.5, top, bottom);
+        vLine(midX + 0.5, top, bottom);
+        hLine(midY - 0.5, left, midX - 0.5);
+        hLine(midY + 0.5, left, midX - 0.5);
+        return true;
+      case 0x2566: // ╦ double down and horizontal
+        hLine(midY - 0.5, left, right);
+        hLine(midY + 0.5, left, right);
+        vLine(midX - 0.5, midY + 0.5, bottom);
+        vLine(midX + 0.5, midY + 0.5, bottom);
+        return true;
+      case 0x2569: // ╩ double up and horizontal
+        hLine(midY - 0.5, left, right);
+        hLine(midY + 0.5, left, right);
+        vLine(midX - 0.5, top, midY - 0.5);
+        vLine(midX + 0.5, top, midY - 0.5);
+        return true;
+      case 0x256C: // ╬ double cross
+        hLine(midY - 0.5, left, right);
+        hLine(midY + 0.5, left, right);
+        vLine(midX - 0.5, top, bottom);
+        vLine(midX + 0.5, top, bottom);
+        return true;
+
+      default:
+        return false;
+    }
   }
 
   /// Paints the background of a cell represented by [cellData] to [canvas] at
