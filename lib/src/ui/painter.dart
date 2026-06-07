@@ -163,9 +163,11 @@ class TerminalPainter {
 
       final charWidth = cellData.content >> CellContent.widthShift;
       final effectiveCols = charWidth == 2 ? 2 : 1;
-      final cellLeft = offset.dx + i * cellWidth;
-      final cellRight = offset.dx + (i + effectiveCols) * cellWidth;
-      final cellOffset = Offset(cellLeft, offset.dy);
+      // Snap directly from the original offset so that cellRight(i)
+      // always equals cellLeft(i+1), eliminating rounding gaps.
+      final cellLeft = _snap(offset.dx + i * cellWidth);
+      final cellRight = _snap(offset.dx + (i + effectiveCols) * cellWidth);
+      final cellOffset = Offset(cellLeft, _snap(offset.dy));
 
       paintCell(canvas, cellOffset, cellData, cellRight);
 
@@ -273,16 +275,19 @@ class TerminalPainter {
     final right = offset.dx + width;
     final top = offset.dy;
     final bottom = offset.dy + height;
-    final midX = offset.dx + width / 2;
-    final midY = offset.dy + height / 2;
+    // Round to nearest pixel so 1px strokes are visible with isAntiAlias=false.
+    final midX = (offset.dx + width / 2).roundToDouble();
+    final midY = (offset.dy + height / 2).roundToDouble();
 
     // Helper closures for common strokes.
+    // Add 0.5 so 1px strokes land in the centre of a pixel with
+    // isAntiAlias=false (Skia nearest-pixel rasterisation).
     void hLine(double y, double x1, double x2) {
-      canvas.drawLine(Offset(x1, y), Offset(x2, y), paint);
+      canvas.drawLine(Offset(x1, y + 0.5), Offset(x2, y + 0.5), paint);
     }
 
     void vLine(double x, double y1, double y2) {
-      canvas.drawLine(Offset(x, y1), Offset(x, y2), paint);
+      canvas.drawLine(Offset(x + 0.5, y1), Offset(x + 0.5, y2), paint);
     }
 
     switch (codePoint) {
