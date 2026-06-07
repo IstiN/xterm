@@ -24,12 +24,8 @@ class TerminalPainter {
   /// Size of each character in the terminal.
   late var _cellSize = _measureCharSize();
 
-  /// Cached device pixel ratio to avoid PlatformDispatcher lookup per cell.
-  double _dpr = 1.0;
-
-  void _updateDpr() {
-    _dpr = PlatformDispatcher.instance.implicitView?.devicePixelRatio ?? 1.0;
-  }
+  /// Returns the current device pixel ratio.
+  double get _dpr => PlatformDispatcher.instance.implicitView?.devicePixelRatio ?? 1.0;
 
   /// The cached for cells in the terminal. Should be cleared when the same
   /// cell no longer produces the same visual output. For example, when
@@ -161,18 +157,15 @@ class TerminalPainter {
   ) {
     final cellData = _reusableCellData;
     final cellWidth = _cellSize.width;
-    final lineOffset = _snapOffset(offset);
 
     for (var i = 0; i < line.length; i++) {
       line.getCellData(i, cellData);
 
       final charWidth = cellData.content >> CellContent.widthShift;
       final effectiveCols = charWidth == 2 ? 2 : 1;
-      // Snap both edges from the same base to eliminate gaps and overlaps
-      // between adjacent cell backgrounds.
-      final cellLeft = _snap(lineOffset.dx + i * cellWidth);
-      final cellRight = _snap(lineOffset.dx + (i + effectiveCols) * cellWidth);
-      final cellOffset = Offset(cellLeft, lineOffset.dy);
+      final cellLeft = offset.dx + i * cellWidth;
+      final cellRight = offset.dx + (i + effectiveCols) * cellWidth;
+      final cellOffset = Offset(cellLeft, offset.dy);
 
       paintCell(canvas, cellOffset, cellData, cellRight);
 
@@ -213,10 +206,6 @@ class TerminalPainter {
     // primitives to guarantee perfect alignment between adjacent cells,
     // regardless of font metrics.
     if (charCode >= 0x2500 && charCode <= 0x257F) {
-      print('[xterm:box] code=0x${charCode.toRadixString(16)} '
-          'char=${String.fromCharCode(charCode)} '
-          'offset=(${offset.dx.toStringAsFixed(2)},${offset.dy.toStringAsFixed(2)}) '
-          'actualW=${actualWidth.toStringAsFixed(2)} nominalW=${_cellSize.width.toStringAsFixed(2)}');
       if (_drawBoxDrawingChar(
         canvas,
         offset,
@@ -453,6 +442,24 @@ class TerminalPainter {
         hLine(midY + 0.5, left, right);
         vLine(midX - 0.5, top, bottom);
         vLine(midX + 0.5, top, bottom);
+        return true;
+
+      // rounded corners (drawn as straight lines for perfect alignment)
+      case 0x256D: // ╭ light arc down and right
+        hLine(midY, midX, right);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x256E: // ╮ light arc down and left
+        hLine(midY, left, midX);
+        vLine(midX, midY, bottom);
+        return true;
+      case 0x256F: // ╯ light arc up and left
+        hLine(midY, left, midX);
+        vLine(midX, top, midY);
+        return true;
+      case 0x2570: // ╰ light arc up and right
+        hLine(midY, midX, right);
+        vLine(midX, top, midY);
         return true;
 
       default:
