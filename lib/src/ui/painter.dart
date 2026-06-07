@@ -282,12 +282,14 @@ class TerminalPainter {
     // Helper closures for common strokes.
     // Add 0.5 so 1px strokes land in the centre of a pixel with
     // isAntiAlias=false (Skia nearest-pixel rasterisation).
+    // Add an extra 0.5 to x2/y2 so the final pixel is fully covered
+    // and adjacent strokes overlap by one pixel (no gaps).
     void hLine(double y, double x1, double x2) {
-      canvas.drawLine(Offset(x1, y + 0.5), Offset(x2, y + 0.5), paint);
+      canvas.drawLine(Offset(x1, y + 0.5), Offset(x2 + 0.5, y + 0.5), paint);
     }
 
     void vLine(double x, double y1, double y2) {
-      canvas.drawLine(Offset(x + 0.5, y1), Offset(x + 0.5, y2), paint);
+      canvas.drawLine(Offset(x + 0.5, y1), Offset(x + 0.5, y2 + 0.5), paint);
     }
 
     switch (codePoint) {
