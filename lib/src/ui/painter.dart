@@ -269,27 +269,22 @@ class TerminalPainter {
       ..color = color
       ..strokeWidth = bold ? 2.0 : 1.0
       ..strokeCap = StrokeCap.butt
-      ..isAntiAlias = false;
+      ..isAntiAlias = true;
 
     final left = offset.dx;
     final right = offset.dx + width;
     final top = offset.dy;
     final bottom = offset.dy + height;
-    // Round to nearest pixel so 1px strokes are visible with isAntiAlias=false.
-    final midX = (offset.dx + width / 2).roundToDouble();
-    final midY = (offset.dy + height / 2).roundToDouble();
+    final midX = offset.dx + width / 2;
+    final midY = offset.dy + height / 2;
 
     // Helper closures for common strokes.
-    // Add 0.5 so 1px strokes land in the centre of a pixel with
-    // isAntiAlias=false (Skia nearest-pixel rasterisation).
-    // Add an extra 0.5 to x2/y2 so the final pixel is fully covered
-    // and adjacent strokes overlap by one pixel (no gaps).
     void hLine(double y, double x1, double x2) {
-      canvas.drawLine(Offset(x1, y + 0.5), Offset(x2 + 0.5, y + 0.5), paint);
+      canvas.drawLine(Offset(x1, y), Offset(x2, y), paint);
     }
 
     void vLine(double x, double y1, double y2) {
-      canvas.drawLine(Offset(x + 0.5, y1), Offset(x + 0.5, y2 + 0.5), paint);
+      canvas.drawLine(Offset(x, y1), Offset(x, y2), paint);
     }
 
     switch (codePoint) {
