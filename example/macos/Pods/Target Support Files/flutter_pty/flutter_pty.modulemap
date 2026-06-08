@@ -1,0 +1,6 @@
+framework module flutter_pty {
+  umbrella header "flutter_pty-umbrella.h"
+
+  export *
+  module * { export * }
+}

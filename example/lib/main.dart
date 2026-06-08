@@ -36,14 +36,18 @@ class Home extends StatefulWidget {
   Home({super.key});
 
   @override
-  _HomeState createState() => _HomeState();
+  HomeState createState() => HomeState();
 }
 
-class _HomeState extends State<Home> {
+class HomeState extends State<Home> {
   final terminal = Terminal(maxLines: 10000);
   final terminalController = TerminalController();
 
   late final Pty pty;
+
+  double _scale = 1.0;
+  static const double _baseWidth = 800;
+  static const double _baseHeight = 600;
 
   @override
   void initState() {
@@ -61,7 +65,7 @@ class _HomeState extends State<Home> {
     terminal.write(
       '\u256D\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256E\r\n'
       '\u2502  hello  \u2502\r\n'
-      '\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F\r\n'
+      '\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F\r\n'
       '\r\n',
     );
 
@@ -89,31 +93,89 @@ class _HomeState extends State<Home> {
     };
   }
 
+  void _setScale(double value) {
+    setState(() {
+      _scale = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: TerminalView(
-          terminal,
-          controller: terminalController,
-          autofocus: true,
-          backgroundOpacity: 0.7,
-          onSecondaryTapDown: (details, offset) async {
-            final selection = terminalController.selection;
-            if (selection != null) {
-              final text = terminal.buffer.getText(selection);
-              terminalController.clearSelection();
-              await Clipboard.setData(ClipboardData(text: text));
-            } else {
-              final data = await Clipboard.getData('text/plain');
-              final text = data?.text;
-              if (text != null) {
-                terminal.paste(text);
-              }
-            }
-          },
+        child: Stack(
+          children: [
+            Center(
+              child: Transform.scale(
+                scale: _scale,
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: _baseWidth,
+                  height: _baseHeight,
+                  child: TerminalView(
+                    terminal,
+                    controller: terminalController,
+                    autofocus: true,
+                    backgroundOpacity: 0.7,
+                    onSecondaryTapDown: (details, offset) async {
+                      final selection = terminalController.selection;
+                      if (selection != null) {
+                        final text = terminal.buffer.getText(selection);
+                        terminalController.clearSelection();
+                        await Clipboard.setData(ClipboardData(text: text));
+                      } else {
+                        final data = await Clipboard.getData('text/plain');
+                        final text = data?.text;
+                        if (text != null) {
+                          terminal.paste(text);
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Scale: ${_scale.toStringAsFixed(2)}x  |  '
+                  'Base: ${_baseWidth.toInt()}x${_baseHeight.toInt()}  |  '
+                  'Rendered: ${(_baseWidth * _scale).toInt()}x${(_baseHeight * _scale).toInt()}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+      floatingActionButton: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final s in [0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
+            FloatingActionButton.small(
+              heroTag: 'scale_$s',
+              backgroundColor:
+                  _scale == s ? Colors.blue : Colors.grey.shade800,
+              onPressed: () => _setScale(s),
+              child: Text(
+                '${s}x',
+                style: const TextStyle(fontSize: 10, color: Colors.white),
+              ),
+            ),
+        ],
       ),
     );
   }
