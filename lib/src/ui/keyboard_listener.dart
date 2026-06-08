@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 class CustomKeyboardListener extends StatelessWidget {
@@ -24,12 +25,25 @@ class CustomKeyboardListener extends StatelessWidget {
   });
 
   KeyEventResult _onKeyEvent(FocusNode focusNode, KeyEvent keyEvent) {
+    assert(() {
+      debugPrint(
+        '[xterm:CustomKeyboardListener] key=${keyEvent.logicalKey} '
+        'character=${keyEvent.character} hasFocus=${focusNode.hasFocus}',
+      );
+      return true;
+    }());
     // First try to handle the key event directly.
     final handled = onKeyEvent(focusNode, keyEvent);
     if (handled == KeyEventResult.ignored) {
       // If it was not handled, but the key corresponds to a character,
       // insert the character.
       if (keyEvent.character != null && keyEvent.character != "") {
+        assert(() {
+          debugPrint(
+            '[xterm:CustomKeyboardListener] inserting character="${keyEvent.character}"',
+          );
+          return true;
+        }());
         onInsert(keyEvent.character!);
         return KeyEventResult.handled;
       }

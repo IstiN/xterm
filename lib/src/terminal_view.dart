@@ -372,12 +372,21 @@ class TerminalViewState extends State<TerminalView> {
   }
 
   void _onInsert(String text) {
+    assert(() {
+      debugPrint('[xterm:TerminalView] _onInsert text="$text"');
+      return true;
+    }());
     final key = charToTerminalKey(text.trim());
 
     // On mobile platforms there is no guarantee that virtual keyboard will
     // generate hardware key events. So we need first try to send the key
     // as a hardware key event. If it fails, then we send it as a text input.
     final consumed = key == null ? false : widget.terminal.keyInput(key);
+
+    assert(() {
+      debugPrint('[xterm:TerminalView] _onInsert key=$key consumed=$consumed');
+      return true;
+    }());
 
     if (!consumed) {
       widget.terminal.textInput(text);
@@ -391,6 +400,13 @@ class TerminalViewState extends State<TerminalView> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode focusNode, KeyEvent event) {
+    assert(() {
+      debugPrint(
+        '[xterm:TerminalView] _handleKeyEvent key=${event.logicalKey} '
+        'character=${event.character} hardwareOnly=${widget.hardwareKeyboardOnly}',
+      );
+      return true;
+    }());
     final resultOverride = widget.onKeyEvent?.call(focusNode, event);
     if (resultOverride != null && resultOverride != KeyEventResult.ignored) {
       return resultOverride;
@@ -413,6 +429,10 @@ class TerminalViewState extends State<TerminalView> {
     final key = keyToTerminalKey(event.logicalKey);
 
     if (key == null) {
+      assert(() {
+        debugPrint('[xterm:TerminalView] keyToTerminalKey returned null');
+        return true;
+      }());
       return KeyEventResult.ignored;
     }
 
@@ -422,6 +442,11 @@ class TerminalViewState extends State<TerminalView> {
       alt: HardwareKeyboard.instance.isAltPressed,
       shift: HardwareKeyboard.instance.isShiftPressed,
     );
+
+    assert(() {
+      debugPrint('[xterm:TerminalView] keyInput handled=$handled');
+      return true;
+    }());
 
     if (handled) {
       _scrollToBottom();

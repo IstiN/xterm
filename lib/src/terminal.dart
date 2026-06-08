@@ -253,6 +253,12 @@ class Terminal with Observable implements TerminalState, EscapeHandler {
       ),
     );
 
+    assert(() {
+      // ignore: avoid_print
+      print('[xterm:Terminal] keyInput key=$key output=${output != null ? '"${output.replaceAll('\n', '\\n')}"' : 'null'}');
+      return true;
+    }());
+
     if (output != null) {
       onOutput?.call(output);
       return true;
@@ -308,6 +314,11 @@ class Terminal with Observable implements TerminalState, EscapeHandler {
   /// - [charInput]
   /// - [paste]
   void textInput(String text) {
+    assert(() {
+      // ignore: avoid_print
+      print('[xterm:Terminal] textInput text="${text.replaceAll('\n', '\\n')}" onOutput=${onOutput != null}');
+      return true;
+    }());
     onOutput?.call(text);
   }
 
